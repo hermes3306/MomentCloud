@@ -21,23 +21,23 @@ if (isset($_FILES)) {
         $temp = explode(".", $name);
         $extension = end($temp);
        
-        if ( ($size/1024/1024) < 2. && in_array($extension, $allowedExts) ) {
+        if ( ($size/1024/1024) < 20. && in_array($extension, $allowedExts) ) {
             //echo "Upload: " . $name . "<br>";
             //echo "Type: " . $type . "<br>";
             //echo "Size: " . ($size / 1024 / 1024) . " Mb<br>";
             //echo "Stored in: " . $tmp_name;
-            if (file_exists(getcwd() . "/upload/" . $name)) {
+            if (file_exists(getcwd() . "/upload100/" . $name)) {
 				echo $res . "<br>";
                 echo $name . " already exists. ";
             }
             else {
-                move_uploaded_file($tmp_name, getcwd() ."/upload/" . $name);
-                echo "Stored in: " . "upload/" . $name;
+                move_uploaded_file($tmp_name, getcwd() ."/upload100/" . $name);
+                echo "Stored in: " . "upload100/" . $name;
             }
         }
         else {
 			echo $res . "<br>";
-            echo ($size/1024/1024) . " Mbyte is bigger than 2 Mb ";
+            echo ($size/1024/1024) . " Mbyte is bigger than 20 Mb ";
             echo $extension . "format file is not allowed to upload ! ";
         }
     }
