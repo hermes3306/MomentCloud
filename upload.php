@@ -1,5 +1,5 @@
 <?php
-$allowedExts = array("ser2", "xls", "csv", "mnt",  "gif", "jpeg", "jpg", "png");
+$allowedExts = array("mp4", "ser2", "xls", "csv", "mnt",  "gif", "jpeg", "jpg", "png");
 
 if (isset($_FILES)) {
     $file = $_FILES["file"];
