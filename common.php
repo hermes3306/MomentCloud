@@ -1,8 +1,6 @@
 <?php
-    $moment_home = "/home/pi/code/MomentCloud";
-    $dbfile      = "/home/pi/code/MomentCloud/Moment.db";
-    $moment_url  = "http://ezehub.club/moment";
+    $moment_home = "/home/azure-user/MomentCloud";
+    $dbfile      = "/home/azure-user/MomentCloud/Moment.db";
+    $moment_url  = "http://20.2.83.111/";
 
-//	error_reporting( E_ALL );
-//	ini_set( "display_errors", 1 );
 ?>
