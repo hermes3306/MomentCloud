@@ -3,8 +3,8 @@
 	$dir = $_GET['dir'];
 	$ext = $_GET['ext'];
 
-	if( is_null($dir)) $dir = ".";
-	if( is_null($ext)) $ext = "jpeg";
+	if( is_null($dir)) $dir = "upload";
+	if( is_null($ext)) $ext = "*";
 
 	$path = $moment_home . '/' . $dir;
 	$files = glob($path . "/*." . $ext, GLOB_BRACE);

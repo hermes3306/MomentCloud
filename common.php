@@ -1,6 +1,5 @@
 <?php
-    $moment_home = "/home/azure-user/MomentCloud";
-    $dbfile      = "/home/azure-user/MomentCloud/Moment.db";
-    $moment_url  = "http://20.2.83.111/";
-
+    $moment_home = "/home/pi/MomentCloud";
+    $dbfile      = "/home/pi/MomentCloud/Moment.db";
+    $moment_url  = "http://58.233.69.198/moment";
 ?>
