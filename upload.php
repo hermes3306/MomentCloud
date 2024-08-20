@@ -1,48 +1,20 @@
 <?php
-$allowedExts = array("mp4", "ser2", "xls", "csv", "mnt",  "gif", "jpeg", "jpg", "png");
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', '/path/to/upload_error.log');
+error_reporting(E_ALL);
 
-if (isset($_FILES)) {
-    $file = $_FILES["file"];
-    $error = $file["error"];
-    $name = $file["name"];
-    $type = $file["type"];
-    $size = $file["size"];
-    $tmp_name = $file["tmp_name"];
+$upload_dir = '/home/pi/MomentCloud/upload/';
+$upload_file = $upload_dir . basename($_FILES['file']['name']);
 
-	$res = "name: " . $name . "<br>";
-	$res = $res . "type: " . $type . "<br>";
-	$res = $res . "size: " . $size . "<br>";
+error_log("Attempting to upload file to: " . $upload_file);
 
-   
-    if ( $error > 0 ) {
-        echo "Error: " . $error . " &*(&******&& <br>";
-    }
-    else {
-        $temp = explode(".", $name);
-        $extension = end($temp);
-       
-        if ( ($size/1024/1024) < 20. && in_array($extension, $allowedExts) ) {
-            //echo "Upload: " . $name . "<br>";
-            //echo "Type: " . $type . "<br>";
-            //echo "Size: " . ($size / 1024 / 1024) . " Mb<br>";
-            //echo "Stored in: " . $tmp_name;
-            if (file_exists(getcwd() . "/upload/" . $name)) {
-				echo $res . "<br>";
-                echo $name . " already exists. ";
-            }
-            else {
-                move_uploaded_file($tmp_name, getcwd() ."/upload/" . $name);
-                echo "Stored in: " . "upload/" . $name;
-            }
-        }
-        else {
-			echo $res . "<br>";
-            echo ($size/1024/1024) . " Mbyte is bigger than 2 Mb ";
-            echo $extension . "format file is not allowed to upload ! ";
-        }
-    }
-}
-else {
-    echo "File is not selected";
+if (move_uploaded_file($_FILES['file']['tmp_name'], $upload_file)) {
+    echo "File is valid, and was successfully uploaded.";
+} else {
+    echo "Upload failed.";
+    error_log("Upload failed. Error code: " . $_FILES['file']['error']);
+    error_log("Upload file permissions: " . substr(sprintf('%o', fileperms($upload_dir)), -4));
+    error_log("Current script owner: " . posix_getpwuid(posix_geteuid())['name']);
 }
 ?>
