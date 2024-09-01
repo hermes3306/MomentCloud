@@ -20,6 +20,8 @@ function sanitize_ext($ext) {
 // Get and sanitize input
 $dir = isset($_GET['dir']) ? sanitize_dir($_GET['dir']) : 'upload';
 $ext = isset($_GET['ext']) ? sanitize_ext($_GET['ext']) : '*';
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$limit = isset($_GET['limit']) ? max(1, intval($_GET['limit'])) : 20;
 
 // Construct the full path
 $path = realpath($moment_home . '/' . $dir);
@@ -38,6 +40,17 @@ if (!in_array($ext, $allowed_extensions)) {
 // Get the list of files
 $files = glob($path . "/*" . ($ext !== '*' ? ".$ext" : ''), GLOB_BRACE);
 
+// Sort files by modification time (most recent first)
+usort($files, function($a, $b) {
+    return filemtime($b) - filemtime($a);
+});
+
+// Calculate pagination
+$total_files = count($files);
+$total_pages = ceil($total_files / $limit);
+$offset = ($page - 1) * $limit;
+$files = array_slice($files, $offset, $limit);
+
 // Generate the list of files
 $thelist = "";
 foreach($files as $f) {
@@ -54,6 +67,11 @@ if (empty($thelist)) {
     echo $thelist;
 }
 
+// Output pagination info
+header('X-Total-Pages: ' . $total_pages);
+header('X-Current-Page: ' . $page);
+header('X-Total-Files: ' . $total_files);
+
 // Log the access
-error_log("List accessed for directory: $dir, extension: $ext");
+error_log("List accessed for directory: $dir, extension: $ext, page: $page, limit: $limit");
 ?>
