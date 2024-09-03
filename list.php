@@ -1,6 +1,4 @@
 <?php
-header('Content-Type: text/plain; charset=utf-8');
-
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 ini_set('error_log', 'list_error.log');
@@ -28,8 +26,8 @@ $limit = isset($_GET['limit']) ? max(1, intval($_GET['limit'])) : 10000;
 // Construct the full path
 $path = realpath($moment_home . '/' . $dir);
 
+// Ensure the path is within the allowed directory
 if ($path === false || strpos($path, realpath($moment_home)) !== 0) {
-    http_response_code(403);
     die("Access denied");
 }
 
@@ -58,8 +56,7 @@ $thelist = "";
 foreach($files as $f) {
     if (is_file($f)) {
         $fname = basename($f);
-        //$thelist .= htmlspecialchars($fname, ENT_QUOTES, 'UTF-8') . '<br>';
-	$thelist .= htmlspecialchars($fname, ENT_QUOTES, 'UTF-8') . "\n";
+        $thelist .= htmlspecialchars($fname, ENT_QUOTES, 'UTF-8') . '<br>';
     }
 }
 
