@@ -1,4 +1,6 @@
 <?php
+header('Content-Type: text/plain; charset=utf-8');
+
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 ini_set('error_log', 'list_error.log');
@@ -21,13 +23,13 @@ function sanitize_ext($ext) {
 $dir = isset($_GET['dir']) ? sanitize_dir($_GET['dir']) : 'upload';
 $ext = isset($_GET['ext']) ? sanitize_ext($_GET['ext']) : '*';
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$limit = isset($_GET['limit']) ? max(1, intval($_GET['limit'])) : 20;
+$limit = isset($_GET['limit']) ? max(1, intval($_GET['limit'])) : 10000;
 
 // Construct the full path
 $path = realpath($moment_home . '/' . $dir);
 
-// Ensure the path is within the allowed directory
 if ($path === false || strpos($path, realpath($moment_home)) !== 0) {
+    http_response_code(403);
     die("Access denied");
 }
 
@@ -56,7 +58,8 @@ $thelist = "";
 foreach($files as $f) {
     if (is_file($f)) {
         $fname = basename($f);
-        $thelist .= htmlspecialchars($fname, ENT_QUOTES, 'UTF-8') . '<br>';
+        //$thelist .= htmlspecialchars($fname, ENT_QUOTES, 'UTF-8') . '<br>';
+	$thelist .= htmlspecialchars($fname, ENT_QUOTES, 'UTF-8') . "\n";
     }
 }
 
@@ -66,11 +69,6 @@ if (empty($thelist)) {
 } else {
     echo $thelist;
 }
-
-// Output pagination info
-header('X-Total-Pages: ' . $total_pages);
-header('X-Current-Page: ' . $page);
-header('X-Total-Files: ' . $total_files);
 
 // Log the access
 error_log("List accessed for directory: $dir, extension: $ext, page: $page, limit: $limit");
