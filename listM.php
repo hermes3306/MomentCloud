@@ -34,7 +34,7 @@ if ($path === false || strpos($path, realpath($moment_home)) !== 0) {
 }
 
 // Use a whitelist of allowed extensions
-$allowed_extensions = ['mp3', 'jpg', 'jpeg', 'png', 'gif', 'mp4', 'csv', 'txt', '*'];
+$allowed_extensions = ['place','memory','jsn', 'json', 'mp3', 'jpg', 'jpeg', 'png', 'gif', 'mp4', 'csv', 'txt', '*'];
 if (!in_array($ext, $allowed_extensions)) {
     die("Invalid file extension");
 }
