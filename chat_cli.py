@@ -2,8 +2,13 @@ import asyncio
 import websockets
 import json
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, scrolledtext
 import base64
+from PIL import Image, ImageTk
+import io
+import requests
+import random
+import string
 
 class ChatClient:
     def __init__(self, master):
@@ -11,43 +16,42 @@ class ChatClient:
         master.title("WebSocket Chat Client")
 
         self.websocket = None
-        self.username = tk.StringVar()
+        self.username = tk.StringVar(value=self.generate_random_username())
         self.message = tk.StringVar()
-        self.base_url = tk.StringVar(value="http://58.233.69.198/images/")
-
-        # Username entry
-        tk.Label(master, text="Username:").grid(row=0, column=0, sticky="e")
-        tk.Entry(master, textvariable=self.username).grid(row=0, column=1)
+        self.base_url = tk.StringVar(value="http://58.233.69.198:8080/moment/images/")
+        self.image_references = []  # List to keep references to all images
 
         # Chat display
-        self.chat_display = tk.Text(master, height=20, width=50)
-        self.chat_display.grid(row=1, column=0, columnspan=2)
+        self.chat_display = scrolledtext.ScrolledText(master, height=20, width=50)
+        self.chat_display.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+        self.chat_display.tag_configure("bold", font=("Arial", 10, "bold"))
 
         # Message entry
-        tk.Label(master, text="Message:").grid(row=2, column=0, sticky="e")
-        tk.Entry(master, textvariable=self.message, width=40).grid(row=2, column=1)
+        tk.Label(master, text="Message:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+        tk.Entry(master, textvariable=self.message, width=40).grid(row=1, column=1, padx=5, pady=5)
 
-        # Send button
-        tk.Button(master, text="Send", command=self.send_message).grid(row=3, column=0, columnspan=2)
+        # Button frame
+        button_frame = tk.Frame(master)
+        button_frame.grid(row=2, column=0, columnspan=2, pady=10)
 
-        # Send image button
-        tk.Button(master, text="Send Image", command=self.send_image).grid(row=4, column=0, columnspan=2)
+        # Buttons
+        tk.Button(button_frame, text="Send", command=self.send_message).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Send Image", command=self.send_image).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Set Base URL", command=self.set_base_url).pack(side=tk.LEFT, padx=5)
 
-        # Set base URL
-        tk.Label(master, text="Base URL:").grid(row=5, column=0, sticky="e")
-        tk.Entry(master, textvariable=self.base_url, width=40).grid(row=5, column=1)
-        tk.Button(master, text="Set Base URL", command=self.set_base_url).grid(row=6, column=0, columnspan=2)
+        # Connect automatically
+        self.connect()
 
-        # Connect button
-        tk.Button(master, text="Connect", command=self.connect).grid(row=7, column=0, columnspan=2)
+    def generate_random_username(self):
+        return ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
     def connect(self):
         asyncio.create_task(self.websocket_connect())
 
     async def websocket_connect(self):
         try:
-            self.websocket = await websockets.connect('ws://localhost:8765')
-            self.chat_display.insert(tk.END, "Connected to server\n")
+            self.websocket = await websockets.connect('ws://58.233.69.198:8765')
+            self.chat_display.insert(tk.END, f"Connected to server as {self.username.get()}\n")
             asyncio.create_task(self.receive_messages())
         except Exception as e:
             messagebox.showerror("Connection Error", str(e))
@@ -64,14 +68,43 @@ class ChatClient:
                     sender = data.get('sender', 'Unknown')
                     content = data.get('content', '')
                     is_image = data.get('is_image', False)
+                    self.chat_display.insert(tk.END, f"{sender}: ", "bold")
                     if is_image:
-                        self.chat_display.insert(tk.END, f"{sender}: [Image] {content}\n")
+                        self.display_image(content)
                     else:
-                        self.chat_display.insert(tk.END, f"{sender}: {content}\n")
+                        self.chat_display.insert(tk.END, f"{content}\n")
                 self.chat_display.see(tk.END)
         except websockets.exceptions.ConnectionClosed:
             self.chat_display.insert(tk.END, "Disconnected from server\n")
 
+    def display_image(self, image_url):
+        try:
+            if image_url.startswith(self.base_url.get()):
+                full_url = image_url
+            else:
+                full_url = f"{self.base_url.get()}{image_url}"
+            
+            response = requests.get(full_url)
+            response.raise_for_status()
+            
+            image_data = response.content
+            
+            image = Image.open(io.BytesIO(image_data))
+            image.thumbnail((200, 200))  # Resize image to fit in chat
+            photo = ImageTk.PhotoImage(image)
+            self.chat_display.image_create(tk.END, image=photo)
+            self.chat_display.insert(tk.END, "\n")
+            
+            # Keep a reference to avoid garbage collection
+            self.image_references.append(photo)
+        except requests.RequestException as e:
+            self.chat_display.insert(tk.END, f"[Error fetching image]\n")
+        except IOError as e:
+            self.chat_display.insert(tk.END, f"[Error processing image]\n")
+        except Exception as e:
+            self.chat_display.insert(tk.END, f"[Error displaying image]\n")
+
+            
     def send_message(self):
         if self.websocket:
             message = {
@@ -89,22 +122,49 @@ class ChatClient:
             file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif")])
             if file_path:
                 with open(file_path, "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                    message = {
+                    file_data = image_file.read()
+                    file_size = len(file_data)
+                    chunk_size = 64 * 1024  # 64 KB chunks
+                    
+                    # Send file info
+                    info_message = {
                         'sender': self.username.get(),
-                        'content': encoded_string,
-                        'type': 'image'
+                        'type': 'image_info',
+                        'file_size': file_size,
+                        'chunk_size': chunk_size
                     }
-                    asyncio.create_task(self.websocket.send(json.dumps(message)))
+                    asyncio.create_task(self.websocket.send(json.dumps(info_message)))
+                    
+                    # Send file data in chunks
+                    for i in range(0, file_size, chunk_size):
+                        chunk = file_data[i:i+chunk_size]
+                        chunk_message = {
+                            'sender': self.username.get(),
+                            'type': 'image_chunk',
+                            'chunk': base64.b64encode(chunk).decode('utf-8'),
+                            'sequence': i // chunk_size
+                        }
+                        asyncio.create_task(self.websocket.send(json.dumps(chunk_message)))
+                    
+                    # Send completion message
+                    complete_message = {
+                        'sender': self.username.get(),
+                        'type': 'image_complete'
+                    }
+                    asyncio.create_task(self.websocket.send(json.dumps(complete_message)))
         else:
             messagebox.showerror("Error", "Not connected to server")
 
     def set_base_url(self):
         if self.websocket:
+            new_base_url = self.base_url.get()
+            if not new_base_url.endswith('/'):
+                new_base_url += '/'
             message = {
                 'type': 'set_base_url',
-                'content': self.base_url.get()
+                'content': new_base_url
             }
+            self.base_url.set(new_base_url)  # Update the StringVar
             asyncio.create_task(self.websocket.send(json.dumps(message)))
         else:
             messagebox.showerror("Error", "Not connected to server")
