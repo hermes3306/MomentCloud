@@ -6,6 +6,7 @@ import base64
 import os
 from uuid import uuid4
 import datetime
+import pytz
 
 # Global variables
 global BASE_URL
@@ -37,7 +38,7 @@ async def save_message(sender, content, is_image):
     conn.commit()
 
 async def get_chat_history():
-    cursor.execute('SELECT sender, content, is_image, timestamp FROM messages ORDER BY timestamp ASC LIMIT 50')
+    cursor.execute('SELECT sender, content, is_image, timestamp FROM messages ORDER BY timestamp ASC LIMIT 5000')
     return cursor.fetchall()
 
 async def handle_client(websocket, path):
@@ -52,7 +53,7 @@ async def handle_client(websocket, path):
                 "sender": sender,
                 "content": content,
                 "is_image": is_image,
-                "timestamp": str(timestamp)
+                "timestamp": datetime.datetime.now(pytz.UTC).isoformat()
             }))
         
         async for message in websocket:
